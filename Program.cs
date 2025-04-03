@@ -13,31 +13,55 @@ class Program
 		string binDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 		// Navigate up two levels to reach the project root
 		string projectRoot = Directory.GetParent(binDirectory).Parent.Parent.FullName;
-		// Set paths relative to project root
+		
+		// Default values
+		string searchPattern = "query*.csv";
 		string folderPath = Path.Combine(projectRoot, "files");
-		string outputPath = Path.Combine(folderPath, "indexes.csv");
-
+		string outputPath;
+		
+		// Parse command line arguments
+		if (args.Length > 0)
+		{
+			searchPattern = args[0];
+		}
+		
+		if (args.Length > 1)
+		{
+			folderPath = args[1];
+		}
+		
+		if (args.Length > 2)
+		{
+			outputPath = args[2];
+		}
+		else
+		{
+			outputPath = Path.Combine(folderPath, "indexes.csv");
+		}
+		
 		var uniqueIndexes = new HashSet<string>();
 
 		// At the beginning
 		Console.WriteLine($"Starting application...");
 		Console.WriteLine($"Using folder path: {folderPath}");
 		Console.WriteLine($"Output will be saved to: {outputPath}");
-		Console.Write("Enter file search pattern (e.g., markets*.csv): ");
-		string searchPattern = Console.ReadLine();
-		
-		if (string.IsNullOrWhiteSpace(searchPattern))
-		{
-			throw new Exception("No search pattern provided");
-		}
-		else
-		{
-			Console.WriteLine($"Searching for files matching pattern: {searchPattern}");
-		}
+		Console.WriteLine($"Searching for files matching pattern: {searchPattern}");
 
 		// Before processing files
+		if (!Directory.Exists(folderPath))
+		{
+			Console.WriteLine($"Error: Directory '{folderPath}' does not exist.");
+			return;
+		}
+		
 		string[] filesToProcess = Directory.GetFiles(folderPath, searchPattern);
 		Console.WriteLine($"Found {filesToProcess.Length} files to process");
+		
+		if (filesToProcess.Length == 0)
+		{
+			Console.WriteLine("No files found matching the search pattern.");
+			return;
+		}
 
 		// Process each file
 		int fileCounter = 0;
@@ -67,10 +91,13 @@ class Program
 		Console.WriteLine($"Processing complete. Found {uniqueIndexes.Count} unique index combinations");
 		Console.WriteLine($"Writing results to {outputPath}");
 
-		// After writing to file
-		Console.WriteLine("Operation completed successfully");
+		// Create directory for output file if it doesn't exist
+		Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
 		WriteIndexesToCsv(outputPath, uniqueIndexes);
+
+		// After writing to file
+		Console.WriteLine("Operation completed successfully");
 	}
 
 	static List<string> ExtractUrlsFromCsv(string filePath)
